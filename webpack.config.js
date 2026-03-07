@@ -7,7 +7,7 @@ const TerserPlugin = require("terser-webpack-plugin");
 
 function compileStylusCommand(mode) {
   return (
-    "stylus ./src/*.styl --out ./dist/" +
+    "npx stylus ./src/*.styl --out ./dist/" +
     (mode === "production" ? " --compress" : " -m")
   );
 }

@@ -1,9 +1,10 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nix-crx.url = "github:andreivolt/nix-crx";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, nix-crx }:
     let
       forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
     in {
@@ -37,29 +38,13 @@
             dontNpmInstall = true;
           };
 
-          manifest = builtins.fromJSON (builtins.readFile "${extension}/share/chromium-extension/manifest.json");
+          crxPkg = nix-crx.lib.mkCrxPackage {
+            inherit pkgs extension;
+            key = ./keys/signing.pem;
+          };
 
-          extId = builtins.readFile (pkgs.runCommand "refined-hacker-news-ext-id" {
-            nativeBuildInputs = [ pkgs.python3 pkgs.openssl ];
-          } ''
-            python3 ${./nix/crx-id.py} ${./keys/signing.pem} > $out
-          '');
-
-          crx = pkgs.runCommand "refined-hacker-news-crx" {
-            nativeBuildInputs = [ pkgs.python3 pkgs.openssl ];
-          } ''
-            mkdir -p $out
-            python3 ${./nix/pack-crx3.py} ${extension}/share/chromium-extension ${./keys/signing.pem} $out/extension.crx
-          '';
         in {
-          default = pkgs.linkFarm "refined-hacker-news" [
-            { name = "share/chromium/extensions/${extId}.json";
-              path = pkgs.writeText "${extId}.json" (builtins.toJSON {
-                external_crx = "${crx}/extension.crx";
-                external_version = manifest.version;
-              });
-            }
-          ];
+          default = crxPkg.package;
         }
       );
     };
