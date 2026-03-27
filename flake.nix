@@ -38,9 +38,13 @@
             dontNpmInstall = true;
           };
 
+          manifest = builtins.fromJSON (builtins.readFile ./src/manifest.json);
+
           crxPkg = nix-crx.lib.mkCrxPackage {
             inherit pkgs extension;
             key = ./keys/signing.pem;
+            extId = "igpocngikdjgleildhmagpibbmkopbeo";
+            version = manifest.version;
           };
 
         in {
