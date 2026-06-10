@@ -1,10 +1,10 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    nix-crx.url = "github:rivavolt/nix-crx";
+    nix-webext.url = "github:rivavolt/nix-webext";
   };
 
-  outputs = { self, nixpkgs, nix-crx }:
+  outputs = { self, nixpkgs, nix-webext }:
     let
       forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
     in {
@@ -39,16 +39,16 @@
           };
 
           manifest = builtins.fromJSON (builtins.readFile ./src/manifest.json);
-
-          crxPkg = nix-crx.lib.mkCrxPackage {
-            inherit pkgs extension;
-            key = ./keys/signing.pem;
-            extId = "igpocngikdjgleildhmagpibbmkopbeo";
-            version = manifest.version;
-          };
-
-        in {
-          default = crxPkg.package;
+        in
+        # Chrome-only; build is keyless (CRX signed at activation from sops).
+        # extId is the stable Chrome ID the old committed key derived.
+        nix-webext.lib.mkBrowserExtension {
+          inherit pkgs extension;
+          pname = "refined-hacker-news";
+          version = manifest.version;
+          extId = "igpocngikdjgleildhmagpibbmkopbeo";
+          firefox = false;
+          transformManifest = false;
         }
       );
     };
